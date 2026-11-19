@@ -79,6 +79,16 @@ try {
     $impactReport = Get-ChildItem (Join-Path $work 'impact-reports') -Filter impact.json -Recurse | Select-Object -First 1
     $record = Get-Content -LiteralPath $impactReport.FullName -Raw | ConvertFrom-Json
     Check ('mods' -in $record.modules -and -not $record.full) 'affected command records the expected module selection'
+    # Explicit -Modules must win over impact analysis, even when impact is full.
+    & (Join-Path $PSScriptRoot 'test.ps1') -Suite affected -ChangedPath 'src/MainWindow.hpp' `
+        -Modules mods -BuildDir $fixture -NoBuild -ListOnly -ReportRoot (Join-Path $work 'explicit-modules-reports') *> (Join-Path $work 'explicit-modules.output.log')
+    Check ($LASTEXITCODE -eq 0) 'affected command accepts explicit -Modules'
+    $explicitLog = Get-Content -LiteralPath (Join-Path $work 'explicit-modules.output.log') -Raw
+    Check ($explicitLog -match 'Affected modules: mods') 'explicit -Modules is not overwritten by full impact analysis'
+    $explicitReport = Get-ChildItem (Join-Path $work 'explicit-modules-reports') -Filter summary.json -Recurse | Select-Object -First 1
+    $explicitSummary = Get-Content -LiteralPath $explicitReport.FullName -Raw | ConvertFrom-Json
+    $testStageArgs = @(($explicitSummary.stages | Where-Object name -eq 'test').arguments | ForEach-Object { [string]$_ })
+    Check ($testStageArgs -contains '-R' -and ($testStageArgs -join ' ') -match 'mod-action-panel') 'explicit -Modules filters the selected tests'
     . (Join-Path $PSScriptRoot 'ci-object-batches.ps1')
     $objectFixture = @(
         'CMakeFiles/WTFMinecraftLauncher.dir/src/one.cpp.obj: CXX_COMPILER__WTFMinecraftLauncher_unscanned_Release',

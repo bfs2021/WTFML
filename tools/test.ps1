@@ -95,7 +95,11 @@ try {
         $paths = if ($PSBoundParameters.ContainsKey('ChangedPath')) { $ChangedPath } else { @(Get-ChangedTestPaths $BaseRef) }
         $impact = Get-TestImpact $paths
         $impact | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $run 'impact.json') -Encoding utf8
-        $Modules = if ($impact.full) { '' } else { $impact.modules -join ',' }
+        # An explicitly supplied -Modules is authoritative; only derive it from impact
+        # analysis when the caller did not pass one (mirrors the ChangedPath check above).
+        if (-not $PSBoundParameters.ContainsKey('Modules')) {
+            $Modules = if ($impact.full) { '' } else { $impact.modules -join ',' }
+        }
         Write-Host "Affected modules: $Modules"
     }
     $moduleTests = @()

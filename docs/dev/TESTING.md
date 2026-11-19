@@ -53,6 +53,8 @@ exe 在 `build/verification-mingw13/WTFMinecraftLauncher.exe`，改完代码重�
 ./tools/test.ps1 -Suite ci-ui -Modules theme
 ```
 
+`affected` 下显式传入的 `-Modules` 优先：直接用它选测试，不再被影响分析（包括判为 full 时清空）的结果覆盖；不传时才按「按改动选择模块」从影响分析推导。
+
 ### 常用参数
 
 | 参数 | 默认 | 说明 |
